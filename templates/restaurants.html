@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Details</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="search-container">
+        <input type="number" id="lat" placeholder="Latitude" step="any">
+        <input type="number" id="lon" placeholder="Longitude" step="any">
+        <button onclick="searchByLocation()">Search Nearby Restaurants</button>
+    </div>
+
+    <div id="restaurantDetails" class="restaurant-details"></div>
+    <button class="back-button" onclick="window.location.href='/index.html'">Back to List</button>
+
+    <script src="/static/script.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const restaurantId = urlParams.get('id');
+
+        if (!restaurantId) {
+            document.getElementById('restaurantDetails').innerHTML = 
+                '<h2>Error: No restaurant ID provided</h2>';
+        } else {
+            fetch('/api/restaurants/${restaurantId}')
+                .then(response => {
+                    if (!response.ok) throw new Error('Restaurant not found');
+                    return response.json();
+                })
+                .then(r => {
+                    document.getElementById('restaurantDetails').innerHTML = `
+                        <h2>${r["Restaurant Name"] || 'Unknown Restaurant'}</h2>
+                        <p><strong>Cuisine:</strong> ${r.Cuisines || 'Not specified'}</p>
+                        <p><strong>Address:</strong> ${r.Address || 'N/A'}</p>
+                        <p><strong>Average Cost for Two:</strong> ${r["Average Cost for two"] || 'N/A'}</p>
+                        <p><strong>Rating:</strong> ${r["Aggregate rating"] || 'N/A'}</p>
+                        <p><strong>Location:</strong> Lat: ${r.location?.coordinates[1] || 'N/A'}, 
+                            Lon: ${r.location?.coordinates[0] || 'N/A'}</p>
+                    `;
+                    document.getElementById('lat').value = r.location?.coordinates[1] || '';
+                    document.getElementById('lon').value = r.location?.coordinates[0] || '';
+                })
+                .catch(error => {
+                    document.getElementById('restaurantDetails').innerHTML = 
+                        <h2>Error: ${error.message}</h2>;
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>

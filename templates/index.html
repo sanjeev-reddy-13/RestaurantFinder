@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zomato</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="main-container">
+        <h1 class="main-title">
+            <span class="zomato-text">Zomato</span>
+        </h1>
+        
+        <div class="search-container">
+            <div class="search-box-group">
+                <input type="text" 
+                       id="searchQuery" 
+                       placeholder="Search for restaurants..."
+                       class="main-search-input">
+                <button onclick="searchRestaurants()" class="primary-button white-bg">
+                    <i class="icon">🔍</i> Search
+                </button>
+            </div>
+            
+            <div class="locate-button-container">
+                <button onclick="window.location.href='/search.html'" class="locate-button-small white-bg">
+                    <i class="icon">📍</i> Locate Restaurants
+                </button>
+            </div>
+        </div>
+
+        <!-- Add restaurant details container -->
+        <div id="restaurantDetails" class="restaurant-details" style="display: none;">
+            <div class="restaurant-detail-card">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div id="searchResults" class="restaurant-details" style="display: none;"></div>
+        <div id="restaurantList" class="restaurant-grid"></div>
+        
+        <div id="pagination" class="pagination">
+            <button onclick="previousPage()">Previous</button>
+            <span id="pageInfo"></span>
+            <button onclick="nextPage()">Next</button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        function init() {
+            console.log('Initializing app...');
+            if (typeof fetchRestaurants === 'function') {
+                console.log('fetchRestaurants found, loading data...');
+                fetchRestaurants(1);
+            } else {
+                console.error('fetchRestaurants not found');
+            }
+        }
+
+        // Wait for both DOM and script to load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // Error handling
+        window.onerror = function(msg, url, line) {
+            console.error(`Error: ${msg}\nAt: ${url}:${line}`);
+        };
+
+        // Add this variable to store the current restaurant
+        let currentRestaurant = null;
+
+        // Add this function to properly reset the view
+        function hideRestaurantDetails() {
+            // Simply hide/show the appropriate containers
+            document.getElementById('restaurantDetails').style.display = 'none';
+            document.getElementById('restaurantList').style.display = 'grid';
+            document.getElementById('pagination').style.display = 'block';
+            currentRestaurant = null; // Clear current restaurant
+        }
+
+        // Update showRestaurantDetails to store the current state
+        function showRestaurantDetails(restaurant) {
+            currentRestaurant = restaurant; // Store current restaurant
+            const detailsContainer = document.getElementById('restaurantDetails');
+            const restaurantList = document.getElementById('restaurantList');
+            const pagination = document.getElementById('pagination');
+            
+            if (!detailsContainer) return;
+
+            // Hide other elements
+            restaurantList.style.display = 'none';
+            pagination.style.display = 'none';
+            
+            // Show and populate details
+            detailsContainer.style.display = 'block';
+            detailsContainer.innerHTML = `
+                <div class="restaurant-detail-card">
+                    <img src="${restaurant["Image URL"] || '/static/placeholder.jpg'}" 
+                         alt="${restaurant["Restaurant Name"]}" 
+                         class="detail-image">
+                    <div class="detail-info">
+                        <h2>${restaurant["Restaurant Name"]}</h2>
+                        
+                        <div class="detail-rating">
+                            <span>★ ${restaurant["Aggregate rating"] || 'N/A'}</span>
+                            <span style="margin-left: 8px; font-size: 0.9em">${restaurant["Rating text"] || 'N/A'}</span>
+                        </div>
+
+                        <div class="detail-features">
+                            ${restaurant["Has Table booking"] === "Yes" ? 
+                                '<span class="feature-tag">🪑 Table Booking Available</span>' : ''}
+                            ${restaurant["Has Online delivery"] === "Yes" ? 
+                                '<span class="feature-tag">🛵 Online Delivery</span>' : ''}
+                            <span class="feature-tag">💵 ${restaurant.Currency || ''} ${restaurant["Average Cost for two"] || 'N/A'} for two</span>
+                        </div>
+
+                        <div class="detail-meta">
+                            <p><strong>Cuisine:</strong> ${restaurant.Cuisines || 'Not specified'}</p>
+                            <p><strong>Votes:</strong> ${restaurant.Votes || '0'} reviews</p>
+                            <p><strong>Locality:</strong> ${restaurant["Locality Verbose"] || 'N/A'}</p>
+                        </div>
+
+                        <p><strong>Address:</strong> ${restaurant.Address || 'N/A'}</p>
+                    </div>
+                </div>
+                <button onclick="hideRestaurantDetails()" class="back-button">
+                    ← Back to Restaurants
+                </button>
+            `;
+        }
+    </script>
+</body>
+</html>

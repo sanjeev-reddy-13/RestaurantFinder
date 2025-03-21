@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Restaurants</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* ...existing styles... */
+
+        .restaurant-detail-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .restaurant-detail-card {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .detail-header {
+            height: 250px;
+            position: relative;
+        }
+
+        .detail-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+        }
+
+        .detail-info {
+            margin-bottom: 20px;
+        }
+
+        .detail-info h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 35px;
+            height: 35px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+
+        .restaurant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .search-result-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .search-result-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .search-result-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .search-result-card .restaurant-info {
+            padding: 15px;
+        }
+
+        .search-result-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .search-result-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .rating {
+            color: #e23744;
+            font-weight: bold;
+        }
+
+        .search-controls-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+        }
+
+        .file-input-label {
+            min-width: 180px;
+            padding: 10px 20px;
+            background: #e23744;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #d32f3a;
+        }
+
+        .image-preview-container {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detection-results {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .detection-confidence {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #27ae60;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <a href="/index.html" class="back-link">← Back to List</a>
+        <h1 class="main-title">Search Restaurants</h1>
+        
+        <div class="search-container">
+            <div class="location-search-group">
+                <input type="number" id="lat" placeholder="Latitude" step="any" class="coordinate-input">
+                <input type="number" id="lon" placeholder="Longitude" step="any" class="coordinate-input">
+                <input type="number" id="radius" placeholder="Radius (meters)" step="any" class="radius-input">
+                <button onclick="searchByLocation()" class="search-button">
+                    <i class="icon">📍</i> Search Location
+                </button>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <div class="image-search-section">
+                <div class="search-controls-row">
+                    <label for="imageInput" class="file-input-label">
+                        <i class="icon">📷</i>
+                        Choose Food Image
+                    </label>
+
+                    <div class="image-preview-container" id="previewContainer" style="display:none;">
+                        <img id="imagePreview" class="image-preview" alt="Preview">
+                    </div>
+
+                    <button onclick="searchByImage()" class="search-button" id="searchImageBtn" disabled>
+                        <i class="icon">🔍</i> Identify & Find Restaurants
+                    </button>
+
+                    <input type="file" 
+                           id="imageInput" 
+                           accept="image/*" 
+                           class="file-input"
+                           onchange="handleImageSelect(event)"
+                           style="display: none;">
+                </div>
+
+                <div id="loadingIndicator" style="display: none;">
+                    <p>Processing image... Please wait</p>
+                </div>
+
+                <div id="predictionInfo" class="detection-results" style="display: none;">
+                    <h4>🔍 Detection Results</h4>
+                    <p id="detectedFood" style="font-weight: 500; margin: 10px 0;"></p>
+                    <p id="confidence" class="detection-confidence"></p>
+                </div>
+            </div>
+
+            <div id="restaurantList" class="restaurant-grid"></div>
+        </div>
+
+        <div id="restaurantDetailContainer" class="restaurant-detail-container">
+            <div class="restaurant-detail-card">
+                <button class="close-button" onclick="hideRestaurantDetail()">✖</button>
+                <div id="restaurantDetailContent"></div>
+            </div>
+        </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        function showRestaurantDetail(restaurant) {
+            const container = document.getElementById('restaurantDetailContainer');
+            const content = document.getElementById('restaurantDetailContent');
+            
+            // Use a default image if none provided
+            const defaultImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mN88B8AAsUB4ZtvXtIAAAAASUVORK5CYII=';
+            
+            const cuisines = restaurant.Cuisines ? restaurant.Cuisines.split(',').map(c => c.trim()) : [];
+            
+            content.innerHTML = `
+                <div class="detail-header">
+                    <img src="${restaurant["Image URL"] || defaultImage}" 
+                         alt="${restaurant["Restaurant Name"]}"
+                         class="detail-image"
+                         onerror="this.src='${defaultImage}'">
+                </div>
+                <div class="detail-content">
+                    <div class="detail-info">
+                        <h2>${restaurant["Restaurant Name"]}</h2>
+                        
+                        <div class="detail-rating">
+                            <span class="rating-stars">★ ${restaurant["Aggregate rating"] || 'N/A'}</span>
+                            <span class="rating-text">${restaurant["Rating text"] || ''}</span>
+                            <span>(${restaurant.Votes || '0'} reviews)</span>
+                        </div>
+
+                        <div class="cuisine-list">
+                            ${cuisines.map(cuisine => `
+                                <span class="cuisine-tag">${cuisine}</span>
+                            `).join('')}
+                        </div>
+
+                        <div class="restaurant-price">
+                            💵 ${restaurant.Currency || ''} ${restaurant["Average Cost for two"] || 'N/A'} for two
+                        </div>
+
+                        <div class="restaurant-features">
+                            ${restaurant["Has Table booking"] === "Yes" ? 
+                                '<span class="feature-tag">🪑 Table Booking Available</span>' : ''}
+                            ${restaurant["Has Online delivery"] === "Yes" ? 
+                                '<span class="feature-tag">🛵 Online Delivery Available</span>' : ''}
+                        </div>
+
+                        <div class="restaurant-meta">
+                            <div class="meta-item">
+                                <span>📍</span>
+                                <strong>Location:</strong> ${restaurant["Locality Verbose"] || 'N/A'}
+                            </div>
+                            <div class="meta-item">
+                                <span>🏠</span>
+                                <strong>Address:</strong> ${restaurant.Address || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.style.display = 'flex';
+            document.body.classList.add('modal-open');
+        }
+
+        function hideRestaurantDetail() {
+            document.getElementById('restaurantDetailContainer').style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            const container = document.getElementById('previewContainer');
+            const searchBtn = document.getElementById('searchImageBtn');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    container.style.display = 'block';
+                    searchBtn.disabled = false; // Enable search button
+                }
+                reader.readAsDataURL(file);
+                // Hide previous results
+                document.getElementById('predictionInfo').style.display = 'none';
+                document.getElementById('restaurantList').innerHTML = '';
+            }
+        }
+
+        function searchByImage() {
+            const imageInput = document.getElementById('imageInput');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const restaurantList = document.getElementById('restaurantList');
+            const searchBtn = document.getElementById('searchImageBtn');
+            const predictionInfo = document.getElementById('predictionInfo');
+
+            if (!imageInput.files || !imageInput.files[0]) {
+                alert('Please select a food image first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+
+            // Show loading state
+            loadingIndicator.style.display = 'block';
+            searchBtn.disabled = true;
+            restaurantList.innerHTML = '<div class="loading">Analyzing image and finding matching restaurants...</div>';
+            predictionInfo.style.display = 'none';
+
+            fetch('/api/restaurants/image-search', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Server error');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Server response:', data);
+                loadingIndicator.style.display = 'none';
+                searchBtn.disabled = false;
+                
+                // Show food detection results
+                if (data.prediction) {
+                    document.getElementById('detectedFood').textContent = 
+                        `Detected Food: ${data.prediction.food_item}`;
+                    document.getElementById('confidence').textContent = 
+                        `Confidence: ${(data.prediction.confidence * 100).toFixed(1)}%`;
+                    predictionInfo.style.display = 'block';
+                }
+
+                // Display restaurants
+                if (data.restaurants && data.restaurants.length > 0) {
+                    restaurantList.innerHTML = data.restaurants.map(restaurant => `
+                        <div class="search-result-card" onclick='showRestaurantDetail(${JSON.stringify(restaurant)})'>
+                            <img src="${restaurant["Image URL"] || '/static/images/placeholder.jpg'}" 
+                                 alt="${restaurant["Restaurant Name"]}"
+                                 class="restaurant-image"
+                                 onerror="this.src='/static/images/placeholder.jpg'">
+                            <div class="restaurant-info">
+                                <h3>${restaurant["Restaurant Name"]}</h3>
+                                <div class="search-result-details">
+                                    <p>${restaurant.Cuisines || 'Not specified'}</p>
+                                    <div class="rating">★ ${restaurant["Aggregate rating"] || 'N/A'}</div>
+                                    <div class="restaurant-price">
+                                        ${restaurant.Currency || ''} ${restaurant["Average Cost for two"] || 'N/A'} for two
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    restaurantList.innerHTML = `
+                        <div class="no-results">
+                            <p>No restaurants found serving "${data.prediction?.food_item || 'detected food'}"</p>
+                            <p>Try another food image</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingIndicator.style.display = 'none';
+                searchBtn.disabled = false;
+                restaurantList.innerHTML = `
+                    <div class="error">
+                        ${error.message || 'Error processing image. Please try again.'}
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
