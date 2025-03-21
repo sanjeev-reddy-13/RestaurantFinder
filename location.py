@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
-# Connect to MongoDB
-client = MongoClient('mongodb://localhost:27017/')
+# Connect to MongoDB Atlas
+client = MongoClient('mongodb+srv://sanjeevreddy2004:Sanjeev13@cluster0.if1yr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['zomato']
 collection = db['restaurants']
 
